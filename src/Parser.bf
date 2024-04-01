@@ -25,7 +25,7 @@ public class Parser
 	}
 
 	public int lastCheckpoint { get => checkpoints.Back; set => checkpoints[checkpoints.Count-1] = value; }
-	public StringView rawToken => .(source, lastCheckpoint, pos-lastCheckpoint);
+	public StringView rawToken => .(source, lastCheckpoint, pos-lastCheckpoint-1);
 
 	public void getTextDebugInfo(out int column, out int line)
 	{
@@ -76,15 +76,14 @@ public class Parser
 
 	public mixin endTry()
 	{
-		checkpoints.PopBack();
+		pos = checkpoints.PopBack();
 		null
 	}
 
-	public mixin endTry<T>(T? res) where T: ValueType
+	public mixin endTry<T>(T? val) where T: ValueType
 	{
-		if(res == null) pos = lastCheckpoint;
-		checkpoints.PopBack();
-		res
+		pos = (val == null)? checkpoints.PopBack() : pos;
+		val
 	}
 
 	public mixin endTry<T>(T val)

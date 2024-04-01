@@ -16,3 +16,15 @@ Name = "ObjParser.bf"
 [[ProjectFolder.Items]]
 Type = "IgnoreSource"
 Name = "TranspilerBase.bf"
+
+[[ProjectFolder.Items]]
+Type = "AutoFolder"
+Name = "ParserExtensions"
+
+[[ProjectFolder.Items.Items]]
+Type = "IgnoreSource"
+Name = "ByteParser.bf"
+
+[[ProjectFolder.Items.Items]]
+Type = "IgnoreSource"
+Name = "ObjParser.bf"
