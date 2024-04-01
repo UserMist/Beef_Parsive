@@ -1,0 +1,18 @@
+FileVersion = 1
+
+[Project]
+Name = "parsive"
+StartupObject = "Parsive.Program"
+DefaultNamespace = "Parsive"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "ByteParser.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "ObjParser.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "TranspilerBase.bf"
