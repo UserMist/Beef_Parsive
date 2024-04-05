@@ -4,28 +4,48 @@ namespace Parsive;
 
 public class Parser
 {
+	public List<String> Errors = new .() ~ DeleteContainerAndItems!(_);
+
 	public StringView source;
 	public int pos;
 	public List<int> checkpoints = new .() ~ delete _;
-	public List<String> errors = new .() ~ DeleteContainerAndItems!(_);
+	int mSourceLength;
+	StringView mDebugName = default;
+	int mDebugNamePos = -1;
 
-	public this(StringView raw, int id = 0)
+	public this(StringView raw, int start = 0)
 	{
-		pos = id;
+		pos = start;
 		source = raw;
+		mSourceLength = source.Length;
 	}
 
-	public void changeSource(StringView newSource = default)
+	public void changeSource(StringView newSource, int start = 0)
 	{
 		if(newSource != default)
 			source = newSource;
 
-		pos = 0;
+		pos = start;
+		mDebugName = default;
+		mDebugNamePos = -1;
 		([Friend]checkpoints).Clear();
+		mSourceLength = source.Length;
 	}
 
-	public int lastCheckpoint { get => checkpoints.Back; set => checkpoints[checkpoints.Count-1] = value; }
-	public StringView rawToken => .(source, lastCheckpoint, pos-lastCheckpoint-1);
+	[Inline] public int lengthLeft => mSourceLength - pos;
+	public int lastCheckpoint { [Inline] get => checkpoints.Back; [Inline] set => checkpoints[checkpoints.Count-1] = value; }
+	[Inline] public StringView rawToken => .(source, lastCheckpoint, pos-lastCheckpoint-1);
+
+	public void getDebugInfoForTokenName(out StringView tokenName, out int tokenNamePath) {
+		tokenNamePath = -1;
+		tokenName = mDebugName;
+		if(tokenName == default)
+			return;
+
+		for(int i = checkpoints.Count-1; i >= 0; i--)
+			if(checkpoints[i] == mDebugNamePos)
+				{ tokenNamePath = i; return; }
+	}
 
 	public void getTextDebugInfo(out int column, out int line)
 	{
@@ -51,20 +71,22 @@ public class Parser
 		}
 	}
 
-	public mixin addTextError(String unownedString = null)
+	public mixin addTextError(StringView msg = null)
 	{
 		getTextDebugInfo(let column, let line);
-		var str = unownedString == null ? new String("Parsing error") : unownedString;
-		if(!unownedString.IsDynAlloc) str = new String(unownedString);
-		errors.Add(str..Append(scope $" at Line {line} (Column {column})"));
+		getDebugInfoForTokenName(let tokenName, ?);
+		var str = new String(msg == default? "Parsing error" : msg);
+		let info = tokenName == default? "" : scope $"while reading \"{tokenName}\" ";
+		Errors.Add(str..Append(scope $"{info} at line {line}:{column}"));
 		null
 	}
 
-	public mixin addByteError(String unownedString = null)
+	public mixin addBinaryError(StringView msg = default)
 	{
-		var str = unownedString == null ? new String("Parsing error") : unownedString;
-		if(!unownedString.IsDynAlloc) str = new String(unownedString);
-		errors.Add(str..Append(scope $" at Byte {pos}"));
+		getDebugInfoForTokenName(let tokenName, ?);
+		var str = new String(msg == default? "Parsing error" : msg);
+		let info = tokenName == default? "" : scope $"while reading \"{tokenName}\" ";
+		Errors.Add(str..Append(scope $"{info} at byte {pos}"));
 		null
 	}
 		
@@ -72,6 +94,13 @@ public class Parser
 	public mixin Try()
 	{
 		checkpoints.Add(pos);
+	}
+
+	public mixin Try(StringView tokenName)
+	{
+		checkpoints.Add(pos);
+		mDebugName = tokenName;
+		mDebugNamePos = pos;
 	}
 
 	public mixin endTry()
@@ -102,7 +131,7 @@ public class Parser
 	[Inline] 
 	public char8? Char()
 	{
-		if(pos >= source.Length)
+		if(pos >= mSourceLength)
 			return null;
 		return source[pos++];
 	}
@@ -110,9 +139,22 @@ public class Parser
 	[Inline] 
 	public uint8? Byte()
 	{
-		if(pos >= source.Length)
+		if(pos >= mSourceLength)
 			return null;
 		return (.)source[pos++];
+	}
+
+	public uint8[N]? Bytes<N>() where N:const int
+	{
+		if(lengthLeft < N)
+			return null;
+
+		uint8[N] ret = ?;
+		for(var i = 0; i < N; i++)
+			ret[i] = (.)source[pos+i];
+
+		pos += N;
+		return ret;
 	}
 
 	public char8? CharFrom(StringView allowedChars)
