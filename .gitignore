@@ -6,3 +6,8 @@ src/Program.bf
 src/TranspilerBase.bf
 recovery
 build
+src/Binary/FBX.bf
+src/Binary/SourceEngine.bf
+src/Text/JSON.bf
+src/Text/OBJ.bf
+src/Text/TOML.bf
