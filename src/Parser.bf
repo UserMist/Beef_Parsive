@@ -9,7 +9,6 @@ public class Parser
 	public StringView source;
 	public int pos;
 	public List<int> checkpoints = new .() ~ delete _;
-	int mSourceLength;
 	StringView mDebugName = default;
 	int mDebugNamePos = -1;
 
@@ -17,7 +16,6 @@ public class Parser
 	{
 		pos = start;
 		source = raw;
-		mSourceLength = source.Length;
 	}
 
 	public void changeSource(StringView newSource, int start = 0)
@@ -29,10 +27,9 @@ public class Parser
 		mDebugName = default;
 		mDebugNamePos = -1;
 		([Friend]checkpoints).Clear();
-		mSourceLength = source.Length;
 	}
 
-	[Inline] public int lengthLeft => mSourceLength - pos;
+	[Inline] public int lengthLeft => source.Length - pos;
 	public int lastCheckpoint { [Inline] get => checkpoints.Back; [Inline] set => checkpoints[checkpoints.Count-1] = value; }
 	[Inline] public StringView rawToken => .(source, lastCheckpoint, pos-lastCheckpoint-1);
 
@@ -76,7 +73,7 @@ public class Parser
 		getTextDebugInfo(let column, let line);
 		getDebugInfoForTokenName(let tokenName, ?);
 		var str = new String(msg == default? "Parsing error" : msg);
-		let info = tokenName == default? "" : scope $"while reading \"{tokenName}\" ";
+		let info = tokenName == default? "" : scope $" while reading \"{tokenName}\"";
 		Errors.Add(str..Append(scope $"{info} at line {line}:{column}"));
 		null
 	}
@@ -85,7 +82,7 @@ public class Parser
 	{
 		getDebugInfoForTokenName(let tokenName, ?);
 		var str = new String(msg == default? "Parsing error" : msg);
-		let info = tokenName == default? "" : scope $"while reading \"{tokenName}\" ";
+		let info = tokenName == default? "" : scope $" while reading \"{tokenName}\"";
 		Errors.Add(str..Append(scope $"{info} at byte {pos}"));
 		null
 	}
@@ -131,7 +128,7 @@ public class Parser
 	[Inline] 
 	public char8? Char()
 	{
-		if(pos >= mSourceLength)
+		if(pos >= source.Length)
 			return null;
 		return source[pos++];
 	}
@@ -139,7 +136,7 @@ public class Parser
 	[Inline] 
 	public uint8? Byte()
 	{
-		if(pos >= mSourceLength)
+		if(pos >= source.Length)
 			return null;
 		return (.)source[pos++];
 	}
