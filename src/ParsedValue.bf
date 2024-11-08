@@ -1,7 +1,7 @@
 using System;
 namespace Parsive;
 
-public struct ParsedNothing { }
+public struct ParserErr { }
 
 //exists to provide safety for backtrack
 public struct Parsed<T>
@@ -9,7 +9,7 @@ public struct Parsed<T>
 	public T ValueOrDefault;
 	public bool HasValue;
 
-	public static implicit operator Parsed<T>(ParsedNothing arg)
+	public static implicit operator Parsed<T>(ParserErr arg)
 		=> default;
 }
 

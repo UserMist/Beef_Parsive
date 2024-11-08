@@ -7,10 +7,10 @@ namespace Parsive;
 //Holds onto info used by top-down backtracked parsers of byte arrays
 public class ParserData
 {
-	public StringView        source;
-	public int               pos;
-	public List<TrackPoint>  track;
-	public List<Remark>      remarks;
+	public StringView       source;
+	public int              pos;
+	public List<TrackPoint> track;
+	public List<Remark>     remarks;
 
 	public ~this() {
 		Debug.Assert(track.Count == 0);
@@ -60,7 +60,7 @@ public class ParserData
 		};
 	}
 
-	public ParsedNothing Err() {
+	public ParserErr Err() {
 		pos = track.PopBack().pos;
 		for (var i = remarks.Count - 1; i >= 0; i--) {
 			let remark = remarks[i];
@@ -144,34 +144,34 @@ public class ParserData
 	[Inline] 
 	public Parsed<uint8> GetByte() {
 		if (pos >= source.Length)
-			return ParsedNothing();
-		return WrapResult((uint8)source[pos++]);
+			return ParserErr();
+		return Wrap((uint8)source[pos++]);
 	}
 
 	[Inline] 
 	public Parsed<char32> GetChar() {
 		if (pos >= source.Length)
-			return ParsedNothing();
+			return ParserErr();
 
 		let res = TrySilent!(UTF8.TryDecode(source.Ptr, source.Length));
 		pos += res.1;
-		return WrapResult(res.0);
+		return Wrap(res.0);
 	}
 
 	public Parsed<T> GetRaw<T>() where T: ValueType {
 		if (sizeof(T) > LengthLeft)
-			return ParsedNothing();
-		return WrapResult(BitConverter.Convert<uint8[sizeof(T)], T>(getBytes<const sizeof(T)>()));
+			return ParserErr();
+		return Wrap(BitConverter.Convert<uint8[sizeof(T)], T>(getBytes<const sizeof(T)>()));
 	}
 
 	public Parsed<T> GetBackwardRaw<T>() where T: ValueType {
 		if (LengthLeft >= sizeof(T)) {
 			var bytes = getBytes<const sizeof(T)>();
 			endianSwap(&bytes, sizeof(T));
-			return WrapResult(BitConverter.Convert<uint8[sizeof(T)], T>(bytes));
+			return Wrap(BitConverter.Convert<uint8[sizeof(T)], T>(bytes));
 		}
 
-		return ParsedNothing();
+		return ParserErr();
 	}
 
 	public Parsed<char32> GetChar(params char32[] allowedChars) {
@@ -210,10 +210,10 @@ public class ParserData
 			let ch = source[pos];
 			if (uint8(ch) < 128) {
 				pos++;
-				return WrapResult(ch);
+				return Wrap(ch);
 			}
 		}
-		return ParsedNothing();
+		return ParserErr();
 	}
 
 	public bool HasExactly(StringView substring) {
@@ -228,12 +228,6 @@ public class ParserData
 		pos += substring.Length;
 		return true;
 	}
-
-	public static Parsed<T> WrapResult<T>(T v)
-		=> .() {
-			ValueOrDefault = v,
-			HasValue = true
-		};
 
 	private uint8[N] getBytes<N>()
 	where N:const int {
@@ -254,6 +248,15 @@ public class ParserData
 	}
 #endregion
 	
+	public static Parsed<T> Wrap<T>(T v)
+		=> .() {
+			ValueOrDefault = v,
+			HasValue = true
+		};
+
+	public static ParserErr Err
+		=> default;
+
 	//todo: check if works
 	public static void LogBytes(String strBuffer, StringView source, int start = 0, int count = int.MaxValue) {
 		let finalPos = Math.Min(start + count, source.Length - 1);
